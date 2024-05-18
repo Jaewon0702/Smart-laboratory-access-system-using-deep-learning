@@ -1,4 +1,4 @@
-# face_recognition
+# face_recognition and object recognition
 #32193430 Jaewon Lee Dankook University  32193430@dankook.ac.kr
 import face_recognition
 import cv2
