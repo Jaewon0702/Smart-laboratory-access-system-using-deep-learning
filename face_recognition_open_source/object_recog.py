@@ -14,7 +14,7 @@ WEIGHTS_PATH = "C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/groun
 #print(WEIGHTS_PATH, "; exist:", os.path.isfile(WEIGHTS_PATH))
 model = load_model(CONFIG_PATH, WEIGHTS_PATH)
 
-def inference(img, prompt, box_threshold=0.65, text_threshold=0.55): #defalut: 0.66, 0.56
+def inference(img, prompt, box_threshold=0.75, text_threshold=0.75): #defalut: 0.66, 0.56
     transform = T.Compose([
         T.RandomResize([800], max_size=1333),
         T.ToTensor(),
@@ -30,29 +30,37 @@ def inference(img, prompt, box_threshold=0.65, text_threshold=0.55): #defalut: 0
         box_threshold=box_threshold,
         text_threshold=text_threshold
     )
-
+    '''if('a lab coat' in phrases):
+        del_index = phrases.index('a lab coat')
+        if(logits[del_index] < 0.70):
+            logits = logits[logits != logits[del_index]]
+            boxes = boxes[boxes != boxes[del_index][:]]
+            phrases.remove('a lab coat')'''
     annotated_frame = annotate(image_source=img, boxes=boxes, logits=logits, phrases=phrases)
     print(logits)
     print(phrases) # 여기서 safety glasses나 lab coat만 따로 처리할 수 있을 거 같은데...
-
-
+    print(boxes)
     return annotated_frame
 
+def Obj_Recog():
 #TEXT_PROMPT = "A person who wearing safety glasses and a laboratory coat"
 #TEXT_PROMPT = "A person who wearing safety glasses and white lab coat with buttons"
-TEXT_PROMPT = "A person with safety glasses,a lab coat and mask"
+#TEXT_PROMPT = "A person with safety glasses, a lab coat, other cloths and mask"
+    TEXT_PROMPT = "A person with a lab coat, a safety glasses, t-shirt and mask."
 
-img = cv2.imread("C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/labortory.jpg")
+    img = cv2.imread("C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/labortory.jpg")
+# "C:/Users/ETRI/PycharmProjects/pythonProject1/face_recognition_open_source/knowns/Jaewon.jpg
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/labortory.jpg
-#C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/lab_court.jpg
+#C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/lab_court.jpgq
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/nothing.jpg
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/only_lab_coat.jpg
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/only_safety_glasses.jpg
 
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-result_img = inference(img, TEXT_PROMPT)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    result_img = inference(img, TEXT_PROMPT)
 
-plt.figure(figsize=(16, 16))
-plt.imshow(result_img[:, :, ::-1])
-plt.axis("off")
-plt.show()
+    plt.figure(figsize=(16, 16))
+    plt.imshow(result_img[:, :, ::-1])
+    plt.axis("off")
+    plt.show()
+#Obj_Recog()
