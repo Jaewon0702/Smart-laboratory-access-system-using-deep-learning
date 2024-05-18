@@ -6,6 +6,8 @@ import camera
 import os
 import numpy as np
 import time
+import object_recog
+import matplotlib.pyplot as plt
 #import pandas as pd
 
 class FaceRecog():
@@ -57,7 +59,7 @@ class FaceRecog():
 
 
         # Only process every other frame of video to save time
-        if current_time - self.last_process_time >= 1:
+        if current_time - self.last_process_time >= 2:
         #if process_this_frame:
             self.last_process_time = current_time
             # Find all the faces and face encodings in the current frame of video
@@ -73,7 +75,8 @@ class FaceRecog():
                 # tolerance: How much distance between faces to consider it a match. Lower is more strict.
                 # 0.6 is typical best performance.
                 name = "Unknown" # if min_value > 0.6, it's Unknown person.
-                if min_value < 0.52:
+                # 정확도를 높이는 법 3초동안 인식해서 제일 많이 나온 걸로 ㄱㄱ
+                if min_value < 0.4:
                     index = np.argmin(distances)
                     name = self.known_face_names[index]
                 self.face_names.append(name)
@@ -109,20 +112,38 @@ class FaceRecog():
 
 
 if __name__ == '__main__':
+    startObjRecog = False
+    TEXT_PROMPT = "A person with safety glasses, a lab coat, other cloths and mask"
+
     face_recog = FaceRecog()
     print(face_recog.known_face_names)
     while True:
-        frame = face_recog.get_frame()
+        if(not startObjRecog):
+            frame = face_recog.get_frame()
+        else:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = object_recog.inference(frame, TEXT_PROMPT)
+            break
 
         # show the frame
 
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
 
+        # 특정 버튼을 눌렀을 때(ex c) 얼굴인식 -> 실험 보호구 인식 -> 얼굴 인식 계속 스위칭이 되도록 하자..!
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
+        if key == ord("c"):
+            time.sleep(10)
+            startObjRecog = not startObjRecog
+
+    plt.figure(figsize=(16, 16))
+    plt.imshow(frame[:, :, ::-1])
+    plt.axis("off")
+    plt.show()
 
     # do a bit of cleanup
     cv2.destroyAllWindows()
     print('finish')
+
