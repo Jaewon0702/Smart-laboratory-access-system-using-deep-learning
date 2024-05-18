@@ -76,7 +76,7 @@ class FaceRecog():
                 # 0.6 is typical best performance.
                 name = "Unknown" # if min_value > 0.6, it's Unknown person.
                 # 정확도를 높이는 법 3초동안 인식해서 제일 많이 나온 걸로 ㄱㄱ
-                if min_value < 0.4:
+                if min_value < 0.45:
                     index = np.argmin(distances)
                     name = self.known_face_names[index]
                 self.face_names.append(name)
@@ -110,23 +110,26 @@ class FaceRecog():
         ret, jpg = cv2.imencode('.jpg', frame)
         return jpg.tobytes()
 
+def screenshot(frame):
+    plt.figure(figsize=(16, 16))
+    plt.imshow(frame[:, :, ::-1])
+    plt.axis("off")
+    plt.show()
 
 if __name__ == '__main__':
     startObjRecog = False
-    TEXT_PROMPT = "A person with safety glasses, a lab coat, other cloths and mask"
+    TEXT_PROMPT = "A person with a lab coat, safety glasses, mask."
 
     face_recog = FaceRecog()
     print(face_recog.known_face_names)
+
+    start_time = 0
+    obj_RecogStart = False
+    screenshot_waitTime = 10
     while True:
-        if(not startObjRecog):
-            frame = face_recog.get_frame()
-        else:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = object_recog.inference(frame, TEXT_PROMPT)
-            break
-
+        frame = face_recog.get_frame()
         # show the frame
-
+        current_time = time.time()
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
 
@@ -134,16 +137,18 @@ if __name__ == '__main__':
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
+        # if the 'c' was pressed, start Object recognition
         if key == ord("c"):
-            time.sleep(10)
-            startObjRecog = not startObjRecog
+            obj_RecogStart = True
+            start_time = time.time()
+        # key를 누른지 10초가 지나면 object recognition 시작
+        if(obj_RecogStart and time.time() - start_time >= screenshot_waitTime):
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = object_recog.inference(frame, TEXT_PROMPT)
+            screenshot(frame)
+            obj_RecogStart = False
 
-    plt.figure(figsize=(16, 16))
-    plt.imshow(frame[:, :, ::-1])
-    plt.axis("off")
-    plt.show()
 
     # do a bit of cleanup
     cv2.destroyAllWindows()
     print('finish')
-
