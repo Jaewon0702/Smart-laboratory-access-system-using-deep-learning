@@ -6,6 +6,9 @@ import groundingdino.datasets.transforms as T
 import cv2
 import matplotlib.pyplot as plt
 
+global WornSafetyGear
+WornSafetyGear = True
+
 HOME = os.getcwd()
 CONFIG_PATH = "C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
 #print(CONFIG_PATH, "; exist:", os.path.isfile(CONFIG_PATH))
@@ -36,6 +39,12 @@ def inference(img, prompt, box_threshold=0.75, text_threshold=0.75): #defalut: 0
             logits = logits[logits != logits[del_index]]
             boxes = boxes[boxes != boxes[del_index][:]]
             phrases.remove('a lab coat')'''
+
+    # Check wearing safety gears
+    global WornSafetyGear
+    if phrases[0] == 'a person' and len(phrases) == 1:
+        WornSafetyGear = False
+
     annotated_frame = annotate(image_source=img, boxes=boxes, logits=logits, phrases=phrases)
     print(logits)
     print(phrases) # 여기서 safety glasses나 lab coat만 따로 처리할 수 있을 거 같은데...
@@ -49,7 +58,7 @@ def Obj_Recog():
     TEXT_PROMPT = "A person with a lab coat, a safety glasses, t-shirt and mask."
 
     img = cv2.imread("C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/labortory.jpg")
-# "C:/Users/ETRI/PycharmProjects/pythonProject1/face_recognition_open_source/knowns/Jaewon.jpg
+
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/labortory.jpg
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/lab_court.jpgq
 #C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/nothing.jpg
