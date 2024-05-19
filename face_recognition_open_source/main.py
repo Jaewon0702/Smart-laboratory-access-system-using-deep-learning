@@ -1,4 +1,4 @@
-# face_recognition and object recognition
+# face_recognition
 #32193430 Jaewon Lee Dankook University  32193430@dankook.ac.kr
 import face_recognition
 import cv2
@@ -8,7 +8,19 @@ import numpy as np
 import time
 import object_recog
 import matplotlib.pyplot as plt
-#import pandas as pd
+import pandas as pd
+import datetime
+
+Student_Data = {
+    'Jaewon' : ['32193430', 'Jaewon Lee'],
+    'Jongbum' : ['32183512', 'Jongbum Lee'],
+    'Sungbin' : ['32182010', 'Sungbin Bae'],
+    'Younghoo': ['32183337', 'Younghoo Lee'],
+    'Youngseung': ['32190175', 'Youngseung Kwak'],
+    "Unknown" : ['NaN', "Unknown"]
+}
+global Last_name
+Last_name = 'Unknown'
 
 class FaceRecog():
     def __init__(self):
@@ -27,7 +39,7 @@ class FaceRecog():
         for filename in files:
             name, ext = os.path.splitext(filename)
             if ext == '.jpg':
-                self.known_face_names.append(name) #
+                self.known_face_names.append(name)
                 pathname = os.path.join(dirname, filename)
                 img = face_recognition.load_image_file(pathname)
                 face_encoding = face_recognition.face_encodings(img)[0]
@@ -81,7 +93,9 @@ class FaceRecog():
                     name = self.known_face_names[index]
                 self.face_names.append(name)
 
-
+                # 마지막으로 인식한 이름 저장
+                global Last_name
+                Last_name = name
         #self.process_this_frame = not self.process_this_frame
 
         # Display the results
@@ -111,10 +125,22 @@ class FaceRecog():
         return jpg.tobytes()
 
 def screenshot(frame):
+    # Save Screen shot
+    now = datetime.datetime.now()
+    cv2.imwrite('captured/captured_%s.png' % now.strftime("%Y%m%d_%H%M%S"), frame)
+
+    # Show Screen shot
     plt.figure(figsize=(16, 16))
     plt.imshow(frame[:, :, ::-1])
     plt.axis("off")
     plt.show()
+
+def AddData(name, worn):
+    now = datetime.datetime.now()
+    df = pd.read_csv("Records/Access_Management_ledge.CSV")
+    df.loc[len(df)] = Student_Data[name]+[now.strftime("%Y-%m-%d %H:%M:%S"), worn]
+    print(df.head())
+    df.to_csv("Records/Access_Management_ledge.CSV",index = False, mode = 'w')
 
 if __name__ == '__main__':
     startObjRecog = False
@@ -126,6 +152,7 @@ if __name__ == '__main__':
     start_time = 0
     obj_RecogStart = False
     screenshot_waitTime = 10
+
     while True:
         frame = face_recog.get_frame()
         # show the frame
@@ -146,8 +173,8 @@ if __name__ == '__main__':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = object_recog.inference(frame, TEXT_PROMPT)
             screenshot(frame)
+            AddData(Last_name, object_recog.WornSafetyGear)
             obj_RecogStart = False
-
 
     # do a bit of cleanup
     cv2.destroyAllWindows()
