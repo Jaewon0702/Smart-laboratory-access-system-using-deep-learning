@@ -10,6 +10,7 @@ import object_recog
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime
+import serial
 
 Student_Data = {
     'Jaewon' : ['32193430', 'Jaewon Lee'],
@@ -135,10 +136,10 @@ def screenshot(frame):
     plt.axis("off")
     plt.show()
 
-def AddData(name, worn):
+def AddData(name, LabCoat, SafetyGear, Mask):
     now = datetime.datetime.now()
     df = pd.read_csv("Records/Access_Management_ledge.CSV")
-    df.loc[len(df)] = Student_Data[name]+[now.strftime("%Y-%m-%d %H:%M:%S"), worn]
+    df.loc[len(df)] = Student_Data[name]+[now.strftime("%Y-%m-%d %H:%M:%S"), LabCoat, SafetyGear, Mask]
     print(df.head())
     df.to_csv("Records/Access_Management_ledge.CSV",index = False, mode = 'w')
 
@@ -152,8 +153,20 @@ if __name__ == '__main__':
     start_time = 0
     obj_RecogStart = False
     screenshot_waitTime = 10
+    # Human Detection Logic
+    HumanDetected = False
+    ser = serial.Serial('COM3', 9600)  # Check your COM port
 
+    # if Human detected, HumanDetected = True 
     while True:
+        if ser.in_waiting > 0:
+            line = ser.readline().decode('utf-8').strip()
+            if line == "Open Webcam":
+                time.sleep(3)
+                HumanDetected = True
+                break
+
+    while HumanDetected:
         frame = face_recog.get_frame()
         # show the frame
         current_time = time.time()
@@ -173,7 +186,8 @@ if __name__ == '__main__':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = object_recog.inference(frame, TEXT_PROMPT)
             screenshot(frame)
-            AddData(Last_name, object_recog.WornSafetyGear)
+            AddData(Last_name, object_recog.WornLabCoat,
+                    object_recog.WornSafetyGlasses,object_recog.WornMask)
             obj_RecogStart = False
 
     # do a bit of cleanup
