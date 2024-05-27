@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime
 import serial
+import playsound
+import pygame
 
 Student_Data = {
     'Jaewon' : ['32193430', 'Jaewon Lee'],
@@ -18,11 +20,13 @@ Student_Data = {
     'Sungbin' : ['32182010', 'Sungbin Bae'],
     'Younghoo': ['32183337', 'Younghoo Lee'],
     'Youngseung': ['32190175', 'Youngseung Kwak'],
-    "Unknown" : ['NaN', "Unknown"]
+    "Unknown" : ['00000000', "Unknown"]
 }
 global Last_name
 Last_name = 'Unknown'
 
+# Initialize pygame
+pygame.init()
 class FaceRecog():
     def __init__(self):
         # Using OpenCV to capture from device 0. If you have trouble capturing
@@ -130,18 +134,56 @@ def screenshot(frame):
     now = datetime.datetime.now()
     cv2.imwrite('captured/captured_%s.png' % now.strftime("%Y%m%d_%H%M%S"), frame)
 
+    # Guide Sound
+    GuideSound(object_recog.WornLabCoat,
+               object_recog.WornSafetyGlasses, object_recog.WornMask)
+
     # Show Screen shot
     plt.figure(figsize=(16, 16))
     plt.imshow(frame[:, :, ::-1])
     plt.axis("off")
     plt.show()
 
-def AddData(name, LabCoat, SafetyGear, Mask):
+def AddData(name, LabCoat, SafetyGlasses, Mask):
     now = datetime.datetime.now()
     df = pd.read_csv("Records/Access_Management_ledge.CSV")
-    df.loc[len(df)] = Student_Data[name]+[now.strftime("%Y-%m-%d %H:%M:%S"), LabCoat, SafetyGear, Mask]
-    print(df.head())
+    df.loc[len(df)] = Student_Data[name]+[now.strftime("%Y-%m-%d %H:%M:%S"), LabCoat, SafetyGlasses, Mask]
     df.to_csv("Records/Access_Management_ledge.CSV",index = False, mode = 'w')
+
+def PlaySound(name):
+    if(name == "Start_Face_Recog"):
+        playsound.playsound('Guide_Voice\Start_face_recognition.mp3')
+    elif(name == "Step Back"):
+        pygame.mixer.Sound('Guide_Voice/Step_Back.mp3').play()
+    elif(name == "Gear Detected"):
+        pygame.mixer.Sound('Guide_Voice/Gear_Detected.mp3').play()
+    elif(name == "End System"):
+        playsound.playsound('Guide_Voice/End_System.mp3')
+    elif(name == "Detecting Gear"):
+        pygame.mixer.Sound("Guide_Voice/Detecting_Gear.mp3").play()
+
+def GuideSound(LabCoat, SafetyGlasses, Mask):
+    LabCoat = not LabCoat
+    SafetyGlasses = not SafetyGlasses
+    Mask = not Mask
+
+    if(LabCoat and SafetyGlasses and Mask):
+        pygame.mixer.Sound('Guide_Voice/Did_not_wear_3.mp3').play()
+    elif(LabCoat and SafetyGlasses):
+        pygame.mixer.Sound('Guide_Voice/Lab_Coat_Glasses.mp3').play()
+    elif(LabCoat and Mask):
+        pygame.mixer.Sound('Guide_Voice/Mask_Lab_Coat.mp3.mp3').play()
+    elif(SafetyGlasses and Mask):
+        pygame.mixer.Sound('Guide_Voice/Glasses_Mask.mp3').play()
+    elif(Mask):
+        pygame.mixer.Sound('Guide_Voice/Mask.mp3').play()
+    elif(SafetyGlasses):
+        pygame.mixer.Sound('Guide_Voice/SafetyGlasses.mp3').play()
+    elif(LabCoat):
+        pygame.mixer.Sound('Guide_Voice/LabCoat.mp3').play()
+    else:
+        pygame.mixer.Sound('Guide_Voice/Gear_Detected.mp3').play()
+
 
 if __name__ == '__main__':
     startObjRecog = False
@@ -153,11 +195,15 @@ if __name__ == '__main__':
     start_time = 0
     obj_RecogStart = False
     screenshot_waitTime = 10
+    PlaySound("Start_Face_Recog")
+
+
     # Human Detection Logic
     HumanDetected = False
     ser = serial.Serial('COM3', 9600)  # Check your COM port
-
-    # if Human detected, HumanDetected = True 
+    
+    
+    # if Human detected, HumanDetected = True
     while True:
         if ser.in_waiting > 0:
             line = ser.readline().decode('utf-8').strip()
@@ -176,18 +222,25 @@ if __name__ == '__main__':
         # 특정 버튼을 눌렀을 때(ex c) 얼굴인식 -> 실험 보호구 인식 -> 얼굴 인식 계속 스위칭이 되도록 하자..!
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
+            PlaySound("End System")
             break
         # if the 'c' was pressed, start Object recognition
         if key == ord("c"):
+            PlaySound("Step Back")
             obj_RecogStart = True
             start_time = time.time()
+
         # key를 누른지 10초가 지나면 object recognition 시작
         if(obj_RecogStart and time.time() - start_time >= screenshot_waitTime):
+            # Sound
+            PlaySound('Detecting Gear')
+            # Detect
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = object_recog.inference(frame, TEXT_PROMPT)
             screenshot(frame)
             AddData(Last_name, object_recog.WornLabCoat,
                     object_recog.WornSafetyGlasses,object_recog.WornMask)
+
             obj_RecogStart = False
 
     # do a bit of cleanup
