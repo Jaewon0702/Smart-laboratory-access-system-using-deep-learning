@@ -6,8 +6,11 @@ import groundingdino.datasets.transforms as T
 import cv2
 import matplotlib.pyplot as plt
 
-global WornSafetyGear
-WornSafetyGear = True
+global WornLabCoat, WornMask, WornSafetyGlasses
+WornLabCoat = False
+WornMask = False
+WornSafetyGlasses = False
+
 
 HOME = os.getcwd()
 CONFIG_PATH = "C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
@@ -17,7 +20,7 @@ WEIGHTS_PATH = "C:/Users/ETRI/PycharmProjects/pythonProject1/GroundingDINO/groun
 #print(WEIGHTS_PATH, "; exist:", os.path.isfile(WEIGHTS_PATH))
 model = load_model(CONFIG_PATH, WEIGHTS_PATH)
 
-def inference(img, prompt, box_threshold=0.75, text_threshold=0.75): #defalut: 0.66, 0.56
+def inference(img, prompt, box_threshold=0.65, text_threshold=0.65): #defalut: 0.66, 0.56, 0.75
     transform = T.Compose([
         T.RandomResize([800], max_size=1333),
         T.ToTensor(),
@@ -41,9 +44,19 @@ def inference(img, prompt, box_threshold=0.75, text_threshold=0.75): #defalut: 0
             phrases.remove('a lab coat')'''
 
     # Check wearing safety gears
-    global WornSafetyGear
+    global WornSafetyGear, WornLabCoat, WornMask, WornSafetyGlasses
+    WornLabCoat = False
+    WornMask = False
+    WornSafetyGlasses = False
+
     if phrases[0] == 'a person' and len(phrases) == 1:
         WornSafetyGear = False
+    if 'a lab coat' in phrases:
+        WornLabCoat = True
+    if 'mask' in phrases:
+        WornMask = True
+    if 'safety glasses' in phrases:
+        WornSafetyGlasses = True
 
     annotated_frame = annotate(image_source=img, boxes=boxes, logits=logits, phrases=phrases)
     print(logits)
